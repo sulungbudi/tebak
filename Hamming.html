@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Hamming Card Game | Tebak Angka dengan 1 Kebohongan</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: linear-gradient(135deg, #1a2a3a 0%, #0f1a24 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Inter', system-ui, monospace;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-container {
+            max-width: 950px;
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(8px);
+            border-radius: 3rem;
+            padding: 1.5rem;
+            box-shadow: 0 25px 40px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .card-panel {
+            background: #fef9e8;
+            border-radius: 2rem;
+            padding: 1.2rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 12px 20px rgba(0,0,0,0.2);
+        }
+        .card-title {
+            font-size: 2rem;
+            font-weight: 800;
+            background: #2c3e4e;
+            display: inline-block;
+            padding: 0.2rem 1.5rem;
+            border-radius: 60px;
+            color: #ffd966;
+            margin-bottom: 1.2rem;
+            letter-spacing: 1px;
+        }
+        .numbers-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            max-height: 360px;
+            overflow-y: auto;
+            padding: 0.8rem;
+            background: #fff3e0;
+            border-radius: 1.8rem;
+            margin: 1rem 0;
+        }
+        .number-chip {
+            background: #2b5e7a;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding: 0.4rem 0.9rem;
+            border-radius: 60px;
+            box-shadow: inset 0 -1px 0 rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.1);
+            font-family: monospace;
+        }
+        .progress {
+            background: #1e2f3c;
+            border-radius: 60px;
+            padding: 0.5rem 1rem;
+            color: #ffecb3;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        .controls-info {
+            background: #00000055;
+            border-radius: 60px;
+            padding: 0.5rem;
+            margin-top: 1rem;
+            font-weight: 600;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+        }
+        .key {
+            background: #2c2c2c;
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            border-radius: 12px;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 1.1rem;
+            box-shadow: inset 0 1px 0 #888, 0 2px 0 #000;
+            color: #ffd966;
+        }
+        .result-area {
+            margin-top: 1.8rem;
+            background: #eef2f5;
+            border-radius: 1.6rem;
+            padding: 1rem;
+        }
+        .tebak-angka {
+            background: #1f6392;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 0.6rem;
+            border-radius: 50px;
+            margin-bottom: 1rem;
+        }
+        /* Tabel mudah dibaca */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 1.2rem;
+            background: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin: 0.8rem 0;
+        }
+        .answer-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Segoe UI', system-ui, monospace;
+            font-size: 0.9rem;
+            min-width: 500px;
+        }
+        .answer-table th {
+            background: #2c3e4e;
+            color: white;
+            font-weight: 600;
+            padding: 12px 10px;
+            font-size: 0.9rem;
+            text-align: center;
+            border-bottom: 2px solid #ffd966;
+        }
+        .answer-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+            background-color: #ffffff;
+        }
+        .answer-table tr:last-child td {
+            border-bottom: none;
+        }
+        .answer-table tbody tr:not(.lie-row):nth-child(even) td {
+            background-color: #f8fafc;
+        }
+        .lie-row td {
+            background-color: #ffe0e0 !important;
+            color: #b91c1c;
+            font-weight: 600;
+            border-left: 4px solid #dc2626;
+            border-right: 4px solid #dc2626;
+        }
+        .lie-row td:first-child {
+            border-left: 4px solid #dc2626;
+        }
+        .lie-row td:last-child {
+            border-right: 4px solid #dc2626;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 0.75rem;
+        }
+        .status-lie {
+            background: #dc2626;
+            color: white;
+        }
+        .status-truth {
+            background: #10b981;
+            color: white;
+        }
+        .reset-btn, .next-btn {
+            background: #ff914d;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: bold;
+            padding: 0.7rem 1.5rem;
+            border-radius: 40px;
+            cursor: pointer;
+            color: #1e2f2f;
+            margin-top: 1rem;
+            width: 100%;
+            transition: 0.1s;
+        }
+        .reset-btn:hover, .next-btn:hover {
+            background: #e57c38;
+            transform: scale(0.98);
+        }
+        .flash {
+            animation: pulse 0.2s ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); background: #f3d382; }
+            100% { transform: scale(1); background: #fef9e8; }
+        }
+        footer {
+            font-size: 0.7rem;
+            text-align: center;
+            margin-top: 1rem;
+            color: #bbb;
+        }
+        /* Kartu Angka Besar (perantara) */
+        .big-number-card {
+            background: linear-gradient(145deg, #fef9e8, #fff4e0);
+            border-radius: 3rem;
+            padding: 2rem;
+            text-align: center;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.3);
+        }
+        .giant-number {
+            font-size: 10rem;
+            font-weight: 900;
+            font-family: monospace;
+            color: #1f6392;
+            text-shadow: 8px 8px 0 #ffd966;
+            letter-spacing: 8px;
+            margin: 20px 0;
+            line-height: 1;
+        }
+        @media (max-width: 600px) {
+            .giant-number {
+                font-size: 5rem;
+                letter-spacing: 4px;
+            }
+            .answer-table th, .answer-table td {
+                padding: 8px 4px;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container" id="gameRoot"></div>
+
+<script>
+    // ======================== HAMMING ENGINE ========================
+    function computeHammingCode(x) {
+        const D1 = (x >> 0) & 1;
+        const D2 = (x >> 1) & 1;
+        const D4 = (x >> 2) & 1;
+        const D8 = (x >> 3) & 1;
+        const D16 = (x >> 4) & 1;
+        const D32 = (x >> 5) & 1;
+        const P0 = D8 ^ D4 ^ D2;
+        const P1 = D8 ^ D4 ^ D1;
+        const P2 = D8 ^ D2 ^ D1;
+        const P3 = D4 ^ D2 ^ D1;
+        return [P0, P1, D1, P2, D2, D4, D8, P3, D16, D32];
+    }
+    
+    function buildCards() {
+        const cards = Array(10).fill().map(() => []);
+        for (let num = 1; num <= 63; num++) {
+            const code = computeHammingCode(num);
+            for (let i = 0; i < 10; i++) {
+                if (code[i] === 1) cards[i].push(num);
+            }
+        }
+        return cards;
+    }
+    
+    function decodeToNumber(codeBits) {
+        const D1 = codeBits[2];
+        const D2 = codeBits[4];
+        const D4 = codeBits[5];
+        const D8 = codeBits[6];
+        const D16 = codeBits[8];
+        const D32 = codeBits[9];
+        return (D1*1) + (D2*2) + (D4*4) + (D8*8) + (D16*16) + (D32*32);
+    }
+    
+    function isCodewordValid(codeBits) {
+        const D1 = codeBits[2], D2 = codeBits[4], D4 = codeBits[5], D8 = codeBits[6];
+        const P0_calc = D8 ^ D4 ^ D2;
+        const P1_calc = D8 ^ D4 ^ D1;
+        const P2_calc = D8 ^ D2 ^ D1;
+        const P3_calc = D4 ^ D2 ^ D1;
+        return (P0_calc === codeBits[0]) && (P1_calc === codeBits[1]) &&
+               (P2_calc === codeBits[3]) && (P3_calc === codeBits[7]);
+    }
+    
+    function correctSingleError(receivedBits) {
+        if (isCodewordValid(receivedBits)) return receivedBits.slice();
+        for (let i = 0; i < 10; i++) {
+            const trial = receivedBits.slice();
+            trial[i] = trial[i] === 0 ? 1 : 0;
+            if (isCodewordValid(trial)) return trial;
+        }
+        return null;
+    }
+    
+    const CARDS = buildCards();
+    const CARD_NAMES = ["Kartu 1", "Kartu 2", "Kartu 3", "Kartu 4", "Kartu 5", 
+                        "Kartu 6", "Kartu 7", "Kartu 8", "Kartu 9", "Kartu 10"];
+    
+    // ======================== STATE ========================
+    let currentCardIndex = 0;
+    let userAnswers = new Array(10).fill(null);
+    let gameActive = true;
+    let gameFinished = false;
+    let finalGuessedNumber = null;
+    let correctedCodeword = null;
+    
+    // State untuk kartu perantara (angka besar)
+    let showBigNumberCard = false;
+    let bigNumber = null;
+    
+    let appRoot;
+    
+    function render() {
+        if (!appRoot) return;
+        if (showBigNumberCard) {
+            renderBigNumberCard();
+        } else if (gameFinished) {
+            renderResultScreen();
+        } else if (gameActive && currentCardIndex < 10) {
+            renderCardScreen();
+        } else if (!gameActive || currentCardIndex >= 10) {
+            processFinalGuess();
+        }
+    }
+    
+    // Setelah semua jawaban terkumpul, hitung angka dan tampilkan kartu besar
+    function processFinalGuess() {
+        // pastikan semua jawaban terisi
+        if (userAnswers.some(v => v === null)) {
+            gameActive = true;
+            renderCardScreen();
+            return;
+        }
+        const received = [...userAnswers];
+        const corrected = correctSingleError(received);
+        if (corrected === null) {
+            // Gagal koreksi -> langsung tampilkan error tanpa kartu besar
+            finalGuessedNumber = null;
+            correctedCodeword = null;
+            gameFinished = true;
+            showBigNumberCard = false;
+            renderResultScreen();
+        } else {
+            correctedCodeword = corrected;
+            finalGuessedNumber = decodeToNumber(corrected);
+            // Tampilkan kartu perantara dengan angka besar
+            showBigNumberCard = true;
+            bigNumber = finalGuessedNumber;
+            gameActive = false;
+            gameFinished = false; // belum finished, masih ada kartu besar
+            render();
+        }
+    }
+    
+    // Kartu besar hanya angka, tanpa tulisan lain (kecuali tombol lanjut)
+    function renderBigNumberCard() {
+        const html = `
+            <div class="big-number-card">
+                <div class="giant-number">${bigNumber}</div>
+                <button class="next-btn" id="continueBtn">          </button>
+            </div>
+            <footer>✨ Angka rahasia hasil koreksi (toleransi 1 kebohongan)</footer>
+        `;
+        appRoot.innerHTML = html;
+        const continueBtn = document.getElementById('continueBtn');
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => {
+                // lanjut ke tabel hasil
+                showBigNumberCard = false;
+                gameFinished = true;
+                render();
+            });
+        }
+    }
+    
+    function renderCardScreen() {
+        const idx = currentCardIndex;
+        const cardNumbers = CARDS[idx];
+        const answered = userAnswers[idx] !== null;
+        const html = `
+            <div class="card-panel">
+                <div class="progress">
+                    📇 Kartu ${idx+1} dari 10 &nbsp; | &nbsp; 
+                    ${answered ? '✅ Sudah dijawab' : '⏳ Menunggu jawaban'}
+                </div>
+                <div class="card-title">${CARD_NAMES[idx]}</div>
+                <div class="numbers-grid">
+                    ${cardNumbers.map(n => `<span class="number-chip">${n}</span>`).join('')}
+                </div>
+                ${answered ? `<div style="margin-top:12px; background:#b9f6ca60; border-radius:40px; padding:6px;">✔️ Jawaban tersimpan: <strong>${userAnswers[idx] === 1 ? 'YA (A)' : 'TIDAK (S)'}</strong></div>` : ''}
+            </div>
+            <footer>💡 Anda boleh berbohong satu kali — sistem akan mendeteksi dan mengoreksi!</footer>
+        `;
+        appRoot.innerHTML = html;
+        attachKeyboardEvents();
+    }
+    
+    function renderResultScreen() {
+        if (!finalGuessedNumber || !correctedCodeword) {
+            const errorHtml = `
+                <div class="result-area">
+                    <div class="tebak-angka" style="background:#9e2a2a;">❌ GAGAL MENEMUKAN ANGKA</div>
+                    <p style="text-align:center; font-weight:bold;">Terjadi lebih dari satu jawaban bohong atau pola tidak konsisten.</p>
+                    <p style="text-align:center;">Sistem hanya mampu mengoreksi <strong>satu kebohongan</strong>. Ulangi dengan jujur atau hanya satu kesalahan.</p>
+                    <button class="reset-btn" id="resetGameBtn">🔄 Main Lagi</button>
+                </div>
+            `;
+            appRoot.innerHTML = errorHtml;
+            document.getElementById('resetGameBtn')?.addEventListener('click', resetGame);
+            return;
+        }
+        
+        const trueCode = computeHammingCode(finalGuessedNumber);
+        let rows = '';
+        let lieCount = 0;
+        for (let i = 0; i < 10; i++) {
+            const userVal = userAnswers[i];
+            const trueVal = trueCode[i];
+            const isLie = (userVal !== trueVal);
+            if (isLie) lieCount++;
+            const userText = userVal === 1 ? 'YA ✅' : 'TIDAK ❌';
+            const truthText = trueVal === 1 ? 'YA' : 'TIDAK';
+            const statusHtml = isLie 
+                ? '<span class="status-badge status-lie">⚠️ BERBOHONG</span>' 
+                : '<span class="status-badge status-truth">✓ SESUAI</span>';
+            const rowClass = isLie ? 'lie-row' : '';
+            rows += `
+                <tr class="${rowClass}">
+                    <td style="font-weight:600;">${CARD_NAMES[i]}</td>
+                    <td>${userText}</td>
+                    <td>${truthText}</td>
+                    <td>${statusHtml}</td>
+                </tr>
+            `;
+        }
+        
+        const lieMessage = (lieCount === 0) ? "✨ Tidak ada kebohongan! Jawaban sempurna." :
+                           (lieCount === 1) ? `🎯 Terdeteksi 1 kebohongan (warna merah) & berhasil dikoreksi.` :
+                           `⚠️ Catatan: Terdapat ${lieCount} perbedaan, namun sistem berhasil menebak angka yang paling mungkin (kode Hamming tetap toleran 1 error).`;
+        
+        const resultHtml = `
+            <div class="result-area">
+                <div class="tebak-angka">
+                    🎯 ANGKA RAHASIA ANDA: <span style="font-size:2rem;">${finalGuessedNumber}</span>
+                </div>
+                <div style="background:#d9e6f5; border-radius: 28px; padding:10px; margin:8px 0; text-align:center; font-weight:500;">
+                    ${lieMessage}
+                </div>
+                <div class="table-wrapper">
+                    <table class="answer-table">
+                        <thead>
+                            <tr>
+                                <th>Kartu</th>
+                                <th>Jawaban Anda</th>
+                                <th>Jawaban Benar*</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+                <p style="font-size:0.75rem; margin-top:8px; text-align:center;">*Jawaban benar berdasarkan angka hasil tebakan (sistem telah koreksi 1 kesalahan). Baris merah menandakan jawaban yang berbohong.</p>
+                <button class="reset-btn" id="resetGameBtn">🔄 Main Lagi / Tebak Baru</button>
+            </div>
+            <footer>🔍 Teknik Hamming (10,6) dengan 4 parity. Satu jawaban bohong otomatis diperbaiki.</footer>
+        `;
+        appRoot.innerHTML = resultHtml;
+        document.getElementById('resetGameBtn')?.addEventListener('click', resetGame);
+    }
+    
+    function resetGame() {
+        currentCardIndex = 0;
+        userAnswers = new Array(10).fill(null);
+        gameActive = true;
+        gameFinished = false;
+        showBigNumberCard = false;
+        finalGuessedNumber = null;
+        correctedCodeword = null;
+        bigNumber = null;
+        render();
+        attachKeyboardEvents();
+    }
+    
+    function answerCurrent(value) {
+        if (!gameActive || gameFinished) return;
+        if (currentCardIndex >= 10) return;
+        userAnswers[currentCardIndex] = value;
+        const panel = document.querySelector('.card-panel');
+        if (panel) panel.classList.add('flash');
+        setTimeout(() => panel?.classList.remove('flash'), 200);
+        currentCardIndex++;
+        if (currentCardIndex === 10) {
+            gameActive = false;
+            processFinalGuess(); // akan mengaktifkan kartu besar
+        } else {
+            render();
+            attachKeyboardEvents();
+        }
+    }
+    
+    let keyHandler = null;
+    function attachKeyboardEvents() {
+        if (keyHandler) window.removeEventListener('keydown', keyHandler);
+        keyHandler = (e) => {
+            // hanya aktif saat kartu tanya jawab
+            if (gameFinished) return;
+            if (showBigNumberCard) return; // saat kartu besar, tidak perlu A/S
+            if (!gameActive) return;
+            if (currentCardIndex >= 10) return;
+            const key = e.key.toLowerCase();
+            if (key === 'a') {
+                e.preventDefault();
+                answerCurrent(1);
+            } else if (key === 's') {
+                e.preventDefault();
+                answerCurrent(0);
+            }
+        };
+        window.addEventListener('keydown', keyHandler);
+    }
+    
+    function init() {
+        appRoot = document.getElementById('gameRoot');
+        resetGame();
+    }
+    init();
+</script>
+</body>
+</html>
