@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Tebak Angka Biner | 6 Kartu Tanpa Parity</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: linear-gradient(145deg, #1e3c3f 0%, #0e2a2c 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(12px);
+            border-radius: 3rem;
+            padding: 1.5rem;
+            box-shadow: 0 25px 40px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.25);
+        }
+        .card-panel {
+            background: #fffbf0;
+            border-radius: 2rem;
+            padding: 1.2rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 12px 20px rgba(0,0,0,0.2);
+        }
+        .card-title {
+            font-size: 2rem;
+            font-weight: 800;
+            background: #2c553e;
+            display: inline-block;
+            padding: 0.2rem 1.5rem;
+            border-radius: 60px;
+            color: #ffec99;
+            margin-bottom: 1.2rem;
+            letter-spacing: 1px;
+        }
+        .bit-value {
+            font-size: 1.3rem;
+            background: #f0c674;
+            display: inline-block;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            margin-left: 0.8rem;
+            color: #1e3c3f;
+            font-weight: bold;
+        }
+        .numbers-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            max-height: 360px;
+            overflow-y: auto;
+            padding: 0.8rem;
+            background: #fef3da;
+            border-radius: 1.8rem;
+            margin: 1rem 0;
+        }
+        .number-chip {
+            background: #2b6e5c;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 0.4rem 0.9rem;
+            border-radius: 60px;
+            box-shadow: inset 0 -1px 0 rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.1);
+            font-family: monospace;
+        }
+        .progress {
+            background: #1a3a36;
+            border-radius: 60px;
+            padding: 0.5rem 1rem;
+            color: #ffecb3;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        .controls-info {
+            background: #00000066;
+            border-radius: 60px;
+            padding: 0.5rem;
+            margin-top: 1rem;
+            font-weight: 600;
+            color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+        }
+        .key {
+            background: #2c2c2c;
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            border-radius: 12px;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 1.1rem;
+            box-shadow: inset 0 1px 0 #888, 0 2px 0 #000;
+            color: #ffd966;
+        }
+        .result-area {
+            margin-top: 1.8rem;
+            background: #eef2f5;
+            border-radius: 1.6rem;
+            padding: 1rem;
+            text-align: center;
+        }
+        .tebak-angka {
+            background: #1f6e4a;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 0.6rem;
+            border-radius: 50px;
+            margin-bottom: 1rem;
+        }
+        .big-number {
+            font-size: 4rem;
+            font-weight: 900;
+            font-family: monospace;
+            background: #2c553e;
+            display: inline-block;
+            padding: 0.2rem 1.8rem;
+            border-radius: 80px;
+            color: #ffec99;
+            margin: 0.5rem 0;
+        }
+        .reset-btn {
+            background: #ff914d;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: bold;
+            padding: 0.7rem 1.5rem;
+            border-radius: 40px;
+            cursor: pointer;
+            color: #1e2f2f;
+            margin-top: 1rem;
+            width: 100%;
+            transition: 0.1s;
+        }
+        .reset-btn:hover {
+            background: #e57c38;
+            transform: scale(0.98);
+        }
+        .flash {
+            animation: pulse 0.2s ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); background: #f3d382; }
+            100% { transform: scale(1); background: #fffbf0; }
+        }
+        footer {
+            font-size: 0.7rem;
+            text-align: center;
+            margin-top: 1rem;
+            color: #ddd;
+        }
+        .summary {
+            background: #ffffffcc;
+            border-radius: 1.2rem;
+            padding: 0.5rem;
+            margin-top: 0.8rem;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+<div class="game-container" id="gameRoot"></div>
+
+<script>
+    // ========== KARTU BINER TANPA PARITY ==========
+    // 6 kartu mewakili bit: 1, 2, 4, 8, 16, 32
+    const BIT_VALUES = [1, 2, 4, 8, 16, 32];
+    const CARD_NAMES = ["Kartu Nilai 1", "Kartu Nilai 2", "Kartu Nilai 4", "Kartu Nilai 8", "Kartu Nilai 16", "Kartu Nilai 32"];
+    
+    // Membangun daftar angka untuk setiap kartu (angka yang memiliki bit tersebut)
+    function buildCards() {
+        const cards = [];
+        for (let bit of BIT_VALUES) {
+            const numbers = [];
+            for (let num = 1; num <= 63; num++) {
+                if (num & bit) numbers.push(num);
+            }
+            cards.push(numbers);
+        }
+        return cards;
+    }
+    
+    const CARDS = buildCards();
+    
+    // ========== STATE ==========
+    let currentCardIndex = 0;      // 0..5
+    let userAnswers = new Array(6).fill(null); // null = belum dijawab, 0 = TIDAK, 1 = YA
+    let gameActive = true;
+    let gameFinished = false;
+    let finalNumber = null;
+    let appRoot;
+    
+    // Render sesuai state
+    function render() {
+        if (!appRoot) return;
+        if (gameFinished) {
+            renderResultScreen();
+        } else if (gameActive && currentCardIndex < 6) {
+            renderCardScreen();
+        } else if (currentCardIndex >= 6) {
+            // Semua kartu terjawab -> hitung angka
+            computeFinalNumber();
+        }
+    }
+    
+    // Menghitung angka dari jawaban YA (bit dijumlah)
+    function computeFinalNumber() {
+        if (userAnswers.some(v => v === null)) {
+            // keamanan, seharusnya tidak terjadi
+            gameActive = true;
+            renderCardScreen();
+            return;
+        }
+        let total = 0;
+        for (let i = 0; i < 6; i++) {
+            if (userAnswers[i] === 1) { // jawaban YA
+                total += BIT_VALUES[i];
+            }
+        }
+        finalNumber = total;
+        gameFinished = true;
+        gameActive = false;
+        render();
+    }
+    
+    // Tampilan kartu pertanyaan (satu per satu)
+    function renderCardScreen() {
+        const idx = currentCardIndex;
+        const cardNumbers = CARDS[idx];
+        const answered = userAnswers[idx] !== null;
+        const bitVal = BIT_VALUES[idx];
+        
+        const html = `
+            <div class="card-panel">
+                <div class="progress">
+                    🃏 Kartu ${idx+1} dari 6 &nbsp; | &nbsp; 
+                    ${answered ? '✅ Sudah dijawab' : '⌨️'}
+                </div>
+                <div class="card-title">
+                    ${CARD_NAMES[idx]} 
+                    <span class="bit-value">(bernilai ${bitVal})</span>
+                </div>
+                <div class="numbers-grid">
+                    ${cardNumbers.map(n => `<span class="number-chip">${n}</span>`).join('')}
+                </div>
+                ${answered ? `<div style="margin-top:12px; background:#b9f6ca60; border-radius:40px; padding:6px;">✔️ Jawaban: <strong>${userAnswers[idx] === 1 ? 'YA (A)' : 'TIDAK (S)'}</strong></div>` : ''}
+            </div>
+            <footer>✨ Setiap kartu mewakili satu nilai biner. Jumlahkan nilai dari kartu yang Anda jawab YA → angka rahasia.</footer>
+        `;
+        appRoot.innerHTML = html;
+        attachKeyboardEvents();
+    }
+    
+    // Layar hasil akhir: menampilkan angka tebakan
+    function renderResultScreen() {
+        if (finalNumber === null || finalNumber < 1 || finalNumber > 63) {
+            // fallback
+            finalNumber = 0;
+        }
+        // Untuk informasi tambahan, buat ringkasan bit yang dipilih
+        let bitsSummary = [];
+        for (let i = 0; i < 6; i++) {
+            if (userAnswers[i] === 1) {
+                bitsSummary.push(BIT_VALUES[i]);
+            }
+        }
+        const bitsText = bitsSummary.length ? bitsSummary.join(' + ') : '0';
+        const calculation = bitsSummary.length ? `${bitsText} = ${finalNumber}` : 'Tidak ada kartu yang dipilih → angka 0 (tidak valid)';
+        
+        const resultHtml = `
+            <div class="result-area">
+                <div class="tebak-angka">
+                    🎯 ANGKA RAHASIA ANDA
+                </div>
+                <div class="big-number">${finalNumber}</div>
+                <div class="summary">
+                    💡 Berdasarkan jawaban YA pada kartu: <strong>${bitsText}</strong><br>
+                    ${calculation}
+                </div>
+                <button class="reset-btn" id="resetGameBtn">🔄 Main Lagi / Tebak Baru</button>
+            </div>
+            <footer>✅ Sistem tanpa parity, tidak ada toleransi kebohongan. Jawablah dengan jujur.</footer>
+        `;
+        appRoot.innerHTML = resultHtml;
+        document.getElementById('resetGameBtn')?.addEventListener('click', resetGame);
+    }
+    
+    // Menyimpan jawaban untuk kartu saat ini dan lanjut ke kartu berikutnya
+    function answerCurrent(value) {
+        if (!gameActive || gameFinished) return;
+        if (currentCardIndex >= 6) return;
+        userAnswers[currentCardIndex] = value;
+        // Efek visual
+        const panel = document.querySelector('.card-panel');
+        if (panel) panel.classList.add('flash');
+        setTimeout(() => panel?.classList.remove('flash'), 200);
+        
+        currentCardIndex++;
+        if (currentCardIndex === 6) {
+            // Semua kartu selesai, hitung angka
+            gameActive = false;
+            computeFinalNumber(); // akan set gameFinished = true dan render hasil
+        } else {
+            render();
+            attachKeyboardEvents();
+        }
+    }
+    
+    // Keyboard event handler (A = YA, S = TIDAK)
+    let keyHandler = null;
+    function attachKeyboardEvents() {
+        if (keyHandler) window.removeEventListener('keydown', keyHandler);
+        keyHandler = (e) => {
+            if (gameFinished) return;
+            if (!gameActive) return;
+            if (currentCardIndex >= 6) return;
+            const key = e.key.toLowerCase();
+            if (key === 'a') {
+                e.preventDefault();
+                answerCurrent(1);
+            } else if (key === 's') {
+                e.preventDefault();
+                answerCurrent(0);
+            }
+        };
+        window.addEventListener('keydown', keyHandler);
+    }
+    
+    // Reset semua state
+    function resetGame() {
+        currentCardIndex = 0;
+        userAnswers = new Array(6).fill(null);
+        gameActive = true;
+        gameFinished = false;
+        finalNumber = null;
+        render();
+        attachKeyboardEvents();
+    }
+    
+    // Inisialisasi
+    function init() {
+        appRoot = document.getElementById('gameRoot');
+        resetGame();
+    }
+    init();
+</script>
+</body>
+</html>
